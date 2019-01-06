@@ -1,12 +1,11 @@
 "use strict"
 define("pwschess/app",["exports","pwschess/resolver","ember-load-initializers","pwschess/config/environment"],function(e,t,i,n){Object.defineProperty(e,"__esModule",{value:!0})
-var r=Ember.Application.extend({modulePrefix:n.default.modulePrefix,podModulePrefix:n.default.podModulePrefix,Resolver:t.default});(0,i.default)(r,n.default.modulePrefix),e.default=r}),define("pwschess/controllers/application",["exports"],function(e){Object.defineProperty(e,"__esModule",{value:!0}),e.default=Ember.Controller.extend({queryParams:["fen"],fen:"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",move:"",board:Ember.computed(function(){var e,t,i=[]
+var r=Ember.Application.extend({modulePrefix:n.default.modulePrefix,podModulePrefix:n.default.podModulePrefix,Resolver:t.default});(0,i.default)(r,n.default.modulePrefix),e.default=r}),define("pwschess/controllers/application",["exports"],function(e){Object.defineProperty(e,"__esModule",{value:!0}),e.default=Ember.Controller.extend({queryParams:["fen"],fen:"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",move:"",pointsHash:Object.freeze({1:0,p:100,n:300,b:300,r:500,q:900,k:0,P:-100,N:-300,B:-300,R:-500,Q:-900,K:0}),grid:Object.freeze({p:[[7],[8,16],[9]],P:[[-7],[-8,-16],[-9]],n:[[17],[15],[10],[6],[-6],[-10],[-15],[-17]],b:[[9,18,27,36,45,54,63],[7,14,21,28,35,42,49],[-7,-14,-21,-28,-35,-42,-49],[-9,-18,-27,-36,-45,-54,-63]],r:[[8,16,24,32,40,48,56],[1,2,3,4,5,6,7],[-1,-2,-3,-4,-5,-6,-7],[-8,-16,-24,-32,-40,-48,-56]],q:[[9,18,27,36,45,54,63],[7,14,21,28,35,42,49],[-7,-14,-21,-28,-35,-42,-49],[-9,-18,-27,-36,-45,-54,-63],[8,16,24,32,40,48,56],[1,2,3,4,5,6,7],[-1,-2,-3,-4,-5,-6,-7],[-8,-16,-24,-32,-40,-48,-56]],k:[[9],[8],[7],[1,2],[-1,-2],[-7],[-8],[-9]]}),board:Ember.computed(function(){var e,t,i=[]
 for(e=0;e<4;e++){for(t=0;t<4;t++)i.push("tile white"),i.push("tile black")
 for(t=0;t<4;t++)i.push("tile black"),i.push("tile white")}return i}),boardArray:Ember.computed("fen",function(){var e,t,i=Ember.get(this,"fen").toString(),n=[],r=0,a=(i=(i=i.replace(/ .+$/,"")).replace(/\//g,"")).length
 for(e=0;e<a;e++){var s=i[e]
 if(isNaN(s))n[r]=s,r++
-else{var o,l=Number(s)
-for(o=0;o<l;o++)n[r]=1,r++}}if(64!==r)for(n=[],t=0;t<64;t++)n[t]=1
+else for(var o=0;o<Number(s);o++)n[r]=1,r++}if(64!==r)for(n=[],t=0;t<64;t++)n[t]=1
 return n}),validMove:Ember.computed("move","boardArray","fenInfo",function(){var e=Ember.get(this,"move"),t=JSON.parse(JSON.stringify(Ember.get(this,"fenInfo"))),i=Ember.get(this,"boardArray").toArray(),n=this.mvToMoveObject(t,e,i)
 return this.checkValid(n)}),tiles:Ember.computed("board","boardArray",function(){var e,t=Ember.get(this,"board").toArray(),i=Ember.get(this,"boardArray").toArray()
 for(e=0;e<i.length;e++){var n=i[e]
@@ -18,8 +17,8 @@ return n=n.replace(/-/g,""),{FenTrue:!0,Fen:t,ToMove:i[0],CastlingWk:i[1].includ
 if(this.checkMove(e).valid){t=!0
 var i=this.makeMove(e),n=!1
 if("w"===i.ToMove){var r,a=i.b.length
-for(r=0;r<a;r++)"k"===i.b[r]&&(i.toIndex=r,n=!0)
-if(n){var s,o=i.b.length
+for(r=0;r<a;r++)if("k"===i.b[r]){i.toIndex=r,n=!0
+break}if(n){var s,o=i.b.length
 for(s=0;s<o;s++)if(this.isWhite(i.b[s])){i.fromIndex=s
 var l=this.checkMove(i)
 l.valid&&(t=!1),i.CastlingCheck&&(2===i.toIndex?l.toIndex=3:l.toIndex=5,l.valid=!0,(l=this.checkMove(l)).valid&&(t=!1),l.toIndex=4,l.valid=!0,(l=this.checkMove(l)).valid&&(t=!1))}}}else{var f,c=i.b.length
@@ -60,30 +59,30 @@ return 8*(8-t[1])+i-1}return-1},indexToAlgebraic:function(e){var t=e%8+1,i=8-Mat
 return String.fromCharCode(t+96)+i},mvToMoveObject:function(e,t,i){var n=JSON.parse(JSON.stringify(e)),r=!1
 if(t&&t.length>3&&t.length<6){r=!0
 var a=t.split(""),s=[]
-s[0]=a[0]+a[1],s[1]=a[2]+a[3],s[2]=a[4],n.fromIndex=this.algebraicToIndex(s[0]),n.toIndex=this.algebraicToIndex(s[1]),s[2]&&(n.piecePromotion=s[2].toLowerCase()),n.b=i}return n.valid=r,n},minimax:function(e,t,i,n,r){if(0===t){var a,s={1:0,p:100,n:300,b:300,r:500,q:900,k:0,P:-100,N:-300,B:-300,R:-500,Q:-900,K:0},o=0,l=e.b.length
-for(a=0;a<l;a++)o+=s[e.b[a]],s[e.b[a]]&&(27!==a&&28!==a&&35!==a&&36!==a||(this.isWhite(e.b[a])?o-=25:o+=25))
-return{mv:e.mv,points:o}}var f,c,d=[],p={p:[[7],[8,16],[9]],P:[[-7],[-8,-16],[-9]],n:[[17],[15],[10],[6],[-6],[-10],[-15],[-17]],b:[[9,18,27,36,45,54,63],[7,14,21,28,35,42,49],[-7,-14,-21,-28,-35,-42,-49],[-9,-18,-27,-36,-45,-54,-63]],r:[[8,16,24,32,40,48,56],[1,2,3,4,5,6,7],[-1,-2,-3,-4,-5,-6,-7],[-8,-16,-24,-32,-40,-48,-56]],q:[[9,18,27,36,45,54,63],[7,14,21,28,35,42,49],[-7,-14,-21,-28,-35,-42,-49],[-9,-18,-27,-36,-45,-54,-63],[8,16,24,32,40,48,56],[1,2,3,4,5,6,7],[-1,-2,-3,-4,-5,-6,-7],[-8,-16,-24,-32,-40,-48,-56]],k:[[9],[8],[7],[1,2],[-1,-2],[-7],[-8],[-9]]},u=e.b.length
-for(c=0;c<u;c++)if("b"===e.ToMove){if(this.isBlack(e.b[c])){e.fromIndex=c
-var h,m=p[e.b[c]],v=m.length
-for(h=0;h<v;h++){var b,g=m[h],x=g.length
-for(b=0;b<x&&(e.toIndex=c+g[b],e.valid=!0,this.checkValid(e));b++)d.push(this.indexToAlgebraic(e.fromIndex)+this.indexToAlgebraic(e.toIndex))}}}else if(this.isWhite(e.b[c])){var y=e.b[c]
-"P"!==y&&(console.log("lololololololo"),y=y.toLowerCase()),e.fromIndex=c
-var k,E=p[y],M=E.length
-for(k=0;k<M;k++){var I,P=E[k],w=P.length
-for(I=0;I<w&&(e.toIndex=c+P[I],e.valid=!0,this.checkValid(e));I++)d.push(this.indexToAlgebraic(e.fromIndex)+this.indexToAlgebraic(e.toIndex))}}if(t>1&&console.log(d.length+"<- ->"+t),0!==d.length){if(i){var C,O=-1e6,T="",_=d.length
-for(C=0;C<_;C++){var A=d[C],B=A.split(""),N=[]
-N[0]=B[0]+B[1],N[1]=B[2]+B[3],N[2]=B[4],e.fromIndex=this.algebraicToIndex(N[0]),e.toIndex=this.algebraicToIndex(N[1]),e.mv=A,f=this.makeMove(e)
-var j=this.minimax(f,t-1,!1,n,r)
-if(j.points>O&&(O=j.points,T=A),j.points>n&&(n=j.points),n>=r){console.log("breakMax")
-break}}return{mv:T,points:O}}var q,W=1e6,S="",z=d.length
-for(q=0;q<z;q++){var R=d[q],F=R.split(""),J=[]
-J[0]=F[0]+F[1],J[1]=F[2]+F[3],J[2]=F[4],e.fromIndex=this.algebraicToIndex(J[0]),e.toIndex=this.algebraicToIndex(J[1]),e.mv=R,f=this.makeMove(e)
-var K=this.minimax(f,t-1,!0,n,r)
-if(K.points<W&&(W=K.points,S=R),K.points<r&&(r=K.points),n>=r){console.log("breakMin")
-break}}return{mv:S,points:W}}var L=-1e6
-return i&&(L=1e6),{mv:e.mv,points:L}},actions:{playMove:function(){var e=this,t=Ember.get(this,"move"),i=JSON.parse(JSON.stringify(Ember.get(this,"fenInfo"))),n=Ember.get(this,"boardArray").toArray(),r=this.mvToMoveObject(i,t,n)
+s[0]=a[0]+a[1],s[1]=a[2]+a[3],s[2]=a[4],n.fromIndex=this.algebraicToIndex(s[0]),n.toIndex=this.algebraicToIndex(s[1]),s[2]&&(n.piecePromotion=s[2].toLowerCase()),n.b=i}return n.valid=r,n},minimax:function(e,t,i,n,r){if(0===t){var a,s=0,o=e.b.length
+for(a=0;a<o;a++)s+=this.pointsHash[e.b[a]]
+return{mv:e.mv,points:s}}var l,f,c=[],d=e.b.length
+for(f=0;f<d;f++)if("b"===e.ToMove){if(this.isBlack(e.b[f])){e.fromIndex=f
+var p,u=this.grid[e.b[f]],h=u.length
+for(p=0;p<h;p++){var m,v=u[p],b=v.length
+for(m=0;m<b&&(e.toIndex=f+v[m],e.valid=!0,this.checkValid(e));m++)c.push(this.indexToAlgebraic(e.fromIndex)+this.indexToAlgebraic(e.toIndex))}}}else if(this.isWhite(e.b[f])){var g=e.b[f]
+"P"!==g&&(g=g.toLowerCase()),e.fromIndex=f
+var x,y=this.grid[g],k=y.length
+for(x=0;x<k;x++){var E,M=y[x],I=M.length
+for(E=0;E<I&&(e.toIndex=f+M[E],e.valid=!0,this.checkValid(e));E++)c.push(this.indexToAlgebraic(e.fromIndex)+this.indexToAlgebraic(e.toIndex))}}if(t>1&&console.log(c.length+"<- ->"+t),0!==c.length){if(i){var P,w=-1e6,O="",C=c.length
+for(P=0;P<C;P++){var T=c[P],_=T.split(""),A=[]
+A[0]=_[0]+_[1],A[1]=_[2]+_[3],A[2]=_[4],e.fromIndex=this.algebraicToIndex(A[0]),e.toIndex=this.algebraicToIndex(A[1]),e.mv=T,l=this.makeMove(e)
+var B=this.minimax(l,t-1,!1,n,r)
+if(B.points>w&&(w=B.points,O=T),B.points>n&&(n=B.points),n>=r){console.log("breakMax")
+break}}return{mv:O,points:w}}var j,N=1e6,q="",W=c.length
+for(j=0;j<W;j++){var z=c[j],S=z.split(""),R=[]
+R[0]=S[0]+S[1],R[1]=S[2]+S[3],R[2]=S[4],e.fromIndex=this.algebraicToIndex(R[0]),e.toIndex=this.algebraicToIndex(R[1]),e.mv=z,l=this.makeMove(e)
+var F=this.minimax(l,t-1,!0,n,r)
+if(F.points<N&&(N=F.points,q=z),F.points<r&&(r=F.points),n>=r){console.log("breakMin")
+break}}return{mv:q,points:N}}var J=-1e6
+return i&&(J=1e6),{mv:e.mv,points:J}},actions:{playMove:function(){var e=this,t=Ember.get(this,"move"),i=JSON.parse(JSON.stringify(Ember.get(this,"fenInfo"))),n=Ember.get(this,"boardArray").toArray(),r=this.mvToMoveObject(i,t,n)
 if(this.checkValid(r)){var a=this.makeMove(r)
-Ember.set(this,"fen",a.Fen),Ember.run.later(function(){var t=Ember.get(e,"move"),i=JSON.parse(JSON.stringify(Ember.get(e,"fenInfo"))),n=Ember.get(e,"boardArray").toArray(),r=e.mvToMoveObject(i,t,n),a=e.minimax(r,2,!0,-1e6,1e6)
+Ember.set(this,"fen",a.Fen),Ember.run.later(function(){var t=Ember.get(e,"move"),i=JSON.parse(JSON.stringify(Ember.get(e,"fenInfo"))),n=Ember.get(e,"boardArray").toArray(),r=e.mvToMoveObject(i,t,n),a=e.minimax(r,6,!0,-1e6,1e6)
 if(-1e6===a.points||1e6===a.points)console.log("mat of pat")
 else{console.log(a)
 var s=a.mv.split(""),o=[]
@@ -102,4 +101,4 @@ i=self}var n,r=t.default.exportApplicationGlobal
 n="string"==typeof r?r:Ember.String.classify(t.default.modulePrefix),i[n]||(i[n]=e,e.reopen({willDestroy:function(){this._super.apply(this,arguments),delete i[n]}}))}}Object.defineProperty(e,"__esModule",{value:!0}),e.initialize=i,e.default={name:"export-application-global",initialize:i}}),define("pwschess/instance-initializers/ember-data",["exports","ember-data/initialize-store-service"],function(e,t){Object.defineProperty(e,"__esModule",{value:!0}),e.default={name:"ember-data",initialize:t.default}}),define("pwschess/resolver",["exports","ember-resolver"],function(e,t){Object.defineProperty(e,"__esModule",{value:!0}),e.default=t.default}),define("pwschess/router",["exports","pwschess/config/environment"],function(e,t){Object.defineProperty(e,"__esModule",{value:!0})
 var i=Ember.Router.extend({location:t.default.locationType,rootURL:t.default.rootURL})
 i.map(function(){}),e.default=i}),define("pwschess/services/ajax",["exports","ember-ajax/services/ajax"],function(e,t){Object.defineProperty(e,"__esModule",{value:!0}),Object.defineProperty(e,"default",{enumerable:!0,get:function(){return t.default}})}),define("pwschess/templates/application",["exports"],function(e){Object.defineProperty(e,"__esModule",{value:!0}),e.default=Ember.HTMLBars.template({id:"6wRSI2Et",block:'{"symbols":["tile"],"statements":[[7,"div"],[11,"class","row"],[9],[0,"\\n\\n"],[7,"div"],[11,"class","column1"],[9],[0,"\\n"],[1,[27,"input",null,[["type","value","placeholder","size"],["text",[23,["fen"]],"Vul hier een FEN in",60]]],false],[0," "],[7,"br"],[9],[10],[0,"\\n"],[7,"br"],[9],[10],[0,"\\n\\n"],[1,[27,"input",null,[["class","type","value","placeholder","size"],[[27,"unless",[[23,["validMove"]],"valid"],null],"text",[23,["move"]],"",30]]],false],[0,"\\n"],[7,"button"],[3,"action",[[22,0,[]],"playMove"]],[9],[0,"Move"],[10],[0,"\\n"],[10],[0,"\\n\\n"],[7,"div"],[11,"class","board column2"],[9],[0,"\\n"],[4,"each",[[23,["tiles"]]],null,{"statements":[[0,"       "],[7,"div"],[12,"class",[22,1,[]]],[9],[10],[0,"\\n"]],"parameters":[1]},null],[10],[0,"\\n"],[7,"div"],[11,"class","column3"],[9],[0,"\\n"],[4,"if",[[23,["fenInfo","FenTrue"]]],null,{"statements":[[0,"  "],[7,"b"],[9],[0,"To Move :"],[10],[0," "],[1,[23,["fenInfo","ToMove"]],false],[7,"br"],[9],[10],[0,"\\n  "],[7,"h4"],[9],[0,"Castling Availabilty"],[10],[0,"\\n  "],[7,"b"],[9],[0,"White Long: "],[10],[4,"if",[[23,["fenInfo","CastlingWq"]]],null,{"statements":[[0,"True"]],"parameters":[]},{"statements":[[0,"False"]],"parameters":[]}],[7,"br"],[9],[10],[0,"\\n  "],[7,"b"],[9],[0,"White Short: "],[10],[4,"if",[[23,["fenInfo","CastlingWk"]]],null,{"statements":[[0,"True"]],"parameters":[]},{"statements":[[0,"False"]],"parameters":[]}],[7,"br"],[9],[10],[0,"\\n  "],[7,"b"],[9],[0,"Black Long: "],[10],[4,"if",[[23,["fenInfo","CastlingBq"]]],null,{"statements":[[0,"True"]],"parameters":[]},{"statements":[[0,"False"]],"parameters":[]}],[7,"br"],[9],[10],[0,"\\n  "],[7,"b"],[9],[0,"Black Short: "],[10],[4,"if",[[23,["fenInfo","CastlingBk"]]],null,{"statements":[[0,"True"]],"parameters":[]},{"statements":[[0,"False"]],"parameters":[]}],[7,"br"],[9],[10],[0,"\\n  "],[7,"b"],[9],[0,"En passant target: "],[10],[1,[23,["fenInfo","EnPassant"]],false],[0,"\\n"]],"parameters":[]},null],[10],[0,"\\n"],[1,[21,"outlet"],false],[0,"\\n"],[10],[0,"\\n"]],"hasEval":false}',meta:{moduleName:"pwschess/templates/application.hbs"}})}),define("pwschess/config/environment",[],function(){try{var e="pwschess/config/environment",t=document.querySelector('meta[name="'+e+'"]').getAttribute("content"),i={default:JSON.parse(unescape(t))}
-return Object.defineProperty(i,"__esModule",{value:!0}),i}catch(t){throw new Error('Could not read config from meta tag with name "'+e+'".')}}),runningTests||require("pwschess/app").default.create({name:"pwschess",version:"0.0.0+e835d950"})
+return Object.defineProperty(i,"__esModule",{value:!0}),i}catch(t){throw new Error('Could not read config from meta tag with name "'+e+'".')}}),runningTests||require("pwschess/app").default.create({name:"pwschess",version:"0.0.0+ad9e384b"})
