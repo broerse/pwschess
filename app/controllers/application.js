@@ -1,11 +1,12 @@
 import Controller from '@ember/controller';
 import { computed, get, set} from '@ember/object';
-import { later } from '@ember/runloop';
+import { later, next } from '@ember/runloop';
 
 export default Controller.extend({
   queryParams: ['fen'],
   fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   move: '',
+  progress: '.',
   pointsHash: Object.freeze({
     '1':0,
     'p':100,
@@ -693,7 +694,7 @@ export default Controller.extend({
     return mo;
   },
 
-  minimax(moveObject, depth, maximizingPlayer, alpha, beta){
+  minimax(moveObject, depth, maximizingPlayer, alpha, beta, resolve){
     if(depth === 0){
       var points = 0;
       var c;
@@ -710,10 +711,10 @@ export default Controller.extend({
           }
         }
       }
-      return {
+      resolve ({
         'mv':moveObject.mv,
         'points': points
-        }
+      });
     } else{
       var moveObjectBX;
       var validArray = [];
@@ -770,6 +771,7 @@ export default Controller.extend({
       }
       if(depth > 1){
         console.log(validArray.length + "<- ->" + depth);
+        set(this, 'progress', get(this, 'progress') + '.');
       }
 
       if(maximizingPlayer){
@@ -777,71 +779,97 @@ export default Controller.extend({
         var mvMax = '';
         var v;
         var validArrayLength = validArray.length;
+        var promisesMax = [];
         for(v = 0; v < validArrayLength; v++){
-          var arrayMoveMax = validArray[v];
-          var uciMax = arrayMoveMax.split('');
-          var resMax = [];
+          promisesMax.push(new Promise((resolveFor, rejectFor) => {
+            var arrayMoveMax = validArray[v];
+            var uciMax = arrayMoveMax.split('');
+            var resMax = [];
 
-          resMax[0] = uciMax[0] + uciMax[1];
-          resMax[1] = uciMax[2] + uciMax[3];
-          resMax[2] = uciMax[4];
+            resMax[0] = uciMax[0] + uciMax[1];
+            resMax[1] = uciMax[2] + uciMax[3];
+            resMax[2] = uciMax[4];
 
-          moveObject.fromIndex = this.algebraicToIndex(resMax[0]);
-          moveObject.toIndex = this.algebraicToIndex(resMax[1]);
-          moveObject.mv = arrayMoveMax;
-          moveObjectBX = this.makeMove(moveObject);
-          var minimaxObjectMax = this.minimax(moveObjectBX, depth - 1, false, alpha, beta);
-          if(minimaxObjectMax.points > pointsMax){
-            pointsMax = minimaxObjectMax.points;
-            mvMax = arrayMoveMax;
-          }
-          if(minimaxObjectMax.points > alpha){
-            alpha = minimaxObjectMax.points;
-          }
-          if(alpha >= beta){
-            console.log("breakMax");
-            break;
-          }
+            moveObject.fromIndex = this.algebraicToIndex(resMax[0]);
+            moveObject.toIndex = this.algebraicToIndex(resMax[1]);
+            moveObject.mv = arrayMoveMax;
+            moveObjectBX = this.makeMove(moveObject);
+            // var minimaxObjectMax = this.minimax(moveObjectBX, depth - 1, false, alpha, beta);
+            new Promise((res, rej) => {
+              next(()=>{this.minimax(moveObjectBX, depth - 1, false, alpha, beta, res)});
+            }).then((minimaxObjectMax) => {
+              if(minimaxObjectMax.points > pointsMax){
+                pointsMax = minimaxObjectMax.points;
+                mvMax = arrayMoveMax;
+              }
+              if(minimaxObjectMax.points > alpha){
+                alpha = minimaxObjectMax.points;
+              }
+              if(alpha >= beta){
+                console.log("breakMax");
+                resolve({
+                  'mv':mvMax,
+                  'points':pointsMax
+                });
+              }
+              resolveFor();
+            });
+          }));
         }
-        return {
-          'mv':mvMax,
-          'points':pointsMax
-          }
+        Promise.all(promisesMax).then(()=> {
+          resolve({
+            'mv':mvMax,
+            'points':pointsMax
+          });
+        });
       } else{
         var pointsMin = 1000000;
         var mvMin = '';
         var o;
         var validArrayLengthO = validArray.length;
+        var promisesMin = [];
         for(o = 0; o < validArrayLengthO; o++){
-          var arrayMoveMin = validArray[o];
-          var uciMin = arrayMoveMin.split('');
-          var resMin = [];
+          promisesMin.push(new Promise((resolveFor, rejectFor) => {
+            var arrayMoveMin = validArray[o];
+            var uciMin = arrayMoveMin.split('');
+            var resMin = [];
 
-          resMin[0] = uciMin[0] + uciMin[1];
-          resMin[1] = uciMin[2] + uciMin[3];
-          resMin[2] = uciMin[4];
+            resMin[0] = uciMin[0] + uciMin[1];
+            resMin[1] = uciMin[2] + uciMin[3];
+            resMin[2] = uciMin[4];
 
-          moveObject.fromIndex = this.algebraicToIndex(resMin[0]);
-          moveObject.toIndex = this.algebraicToIndex(resMin[1]);
-          moveObject.mv = arrayMoveMin;
-          moveObjectBX = this.makeMove(moveObject);
-          var minimaxObjectMin = this.minimax(moveObjectBX, depth - 1, true, alpha, beta);
-          if(minimaxObjectMin.points < pointsMin){
-            pointsMin = minimaxObjectMin.points;
-            mvMin = arrayMoveMin;
-          }
-          if(minimaxObjectMin.points < beta){
-            beta = minimaxObjectMin.points;
-          }
-          if(alpha >= beta){
-            console.log("breakMin");
-            break;
-          }
+            moveObject.fromIndex = this.algebraicToIndex(resMin[0]);
+            moveObject.toIndex = this.algebraicToIndex(resMin[1]);
+            moveObject.mv = arrayMoveMin;
+            moveObjectBX = this.makeMove(moveObject);
+            // var minimaxObjectMin = this.minimax(moveObjectBX, depth - 1, true, alpha, beta);
+            new Promise((res, rej) => {
+              next(()=>{this.minimax(moveObjectBX, depth - 1, true, alpha, beta, res)});
+            }).then((minimaxObjectMin) => {
+              if(minimaxObjectMin.points < pointsMin){
+                pointsMin = minimaxObjectMin.points;
+                mvMin = arrayMoveMin;
+              }
+              if(minimaxObjectMin.points < beta){
+                beta = minimaxObjectMin.points;
+              }
+              if(alpha >= beta){
+                console.log("breakMin");
+                resolve({
+                  'mv':mvMin,
+                  'points':pointsMin
+                });
+              }
+              resolveFor();
+            });
+          }));
         }
-        return {
-          'mv':mvMin,
-          'points':pointsMin
-          }
+        Promise.all(promisesMin).then(()=> {
+          resolve({
+            'mv':mvMin,
+            'points':pointsMin
+          });
+        });
       }
     }
   },
@@ -860,22 +888,26 @@ export default Controller.extend({
           var fi = JSON.parse(JSON.stringify(get(this,'fenInfo')));
           var b = get(this,'boardArray').toArray();
           var newMoveObject = this.mvToMoveObject(fi, mv, b);
-          var minimaxMove = this.minimax(newMoveObject, 2, true, -1000000, 1000000);
-          if(minimaxMove.points === -1000000){
-            console.log("x");
-          } else{
-            console.log(minimaxMove);
-            var uci = minimaxMove.mv.split('');
-            var res = [];
-            res[0] = uci[0] + uci[1];
-            res[1] = uci[2] + uci[3];
-            res[2] = uci[4];
-            newMoveObject.fromIndex = this.algebraicToIndex(res[0]);
-            newMoveObject.toIndex = this.algebraicToIndex(res[1]);
-            var newMoveObjectBX = this.makeMove(newMoveObject);
-            set(this, 'fen', newMoveObjectBX.Fen);
-            set(this, 'move', '');
-          }
+          // var minimaxMove = this.minimax(newMoveObject, 2, true, -1000000, 1000000);
+          new Promise((resolve, reject) => {
+            next(()=>{this.minimax(newMoveObject, 3, true, -1000000, 1000000, resolve)});
+          }).then((minimaxMove) => {
+            if(minimaxMove.points === -1000000){
+              console.log("x");
+            } else{
+              console.log(minimaxMove);
+              var uci = minimaxMove.mv.split('');
+              var res = [];
+              res[0] = uci[0] + uci[1];
+              res[1] = uci[2] + uci[3];
+              res[2] = uci[4];
+              newMoveObject.fromIndex = this.algebraicToIndex(res[0]);
+              newMoveObject.toIndex = this.algebraicToIndex(res[1]);
+              var newMoveObjectBX = this.makeMove(newMoveObject);
+              set(this, 'fen', newMoveObjectBX.Fen);
+              set(this, 'move', '');
+            }
+          });
         },500);
       }
     }
